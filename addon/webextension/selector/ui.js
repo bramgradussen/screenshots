@@ -30,6 +30,10 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
     return cached;
   }
 
+  function isDownloadOnly() {
+    return window.incognito;
+  }
+
   exports.isHeader = function(el) {
     while (el) {
       if (el.classList &&
@@ -264,7 +268,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
                      </div>
                      <div class="preview-instructions" data-l10n-id="screenshotInstructions"></div>
                      <div class="myshots-all-buttons-container">
-                       ${window.incognito ? '' : `
+                       ${isDownloadOnly() ? '' : `
                          <button class="myshots-button myshots-link" tabindex="1" data-l10n-id="myShotsLink"></button>
                          <div class="spacer"></div>
                        `}
@@ -282,7 +286,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
             this.document.documentElement.lang = browser.i18n.getMessage("@@ui_locale");
             const overlay = this.document.querySelector(".preview-overlay");
             localizeText(this.document);
-            if (!window.incognito) {
+            if (!(isDownloadOnly())) {
               overlay.querySelector(".myshots-button").addEventListener(
                 "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onOpenMyShots)));
             }
@@ -366,10 +370,15 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
                   <div class="preview-image">
                     <div class="preview-buttons">
                       <button class="highlight-button-cancel"></button>
-                      <button class="highlight-button-download"></button>
-                      ${window.incognito ? '' : `
-                        <button class="preview-button-save" data-l10n-id="saveScreenshotSelectedArea"></button>
-                      `}
+                      ${isDownloadOnly() ? 
+
+                        `<button class="highlight-button-download download-only-button"
+                                 data-l10n-id="downloadScreenshot"></button>` :
+
+                        `<button class="highlight-button-download></button>
+                         <button class="preview-button-save"
+                                 data-l10n-id="saveScreenshotSelectedArea"></button>`
+                      }
                     </div>
                   </div>
                 </div>
@@ -381,7 +390,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
             const overlay = this.document.querySelector(".preview-overlay");
             overlay.querySelector(".highlight-button-download").addEventListener(
               "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onDownloadPreview)));
-            if (!window.incognito) {
+            if (!(isDownloadOnly())) {
               overlay.querySelector(".preview-button-save").addEventListener(
                 "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onSavePreview)));
             }
@@ -487,7 +496,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       } else {
         this.cancel.style.display = "none";
       }
-      if (callbacks !== undefined && callbacks.save) {
+      if (callbacks !== undefined && callbacks.save && this.save) {
         // We use onclick here because we don't want addEventListener
         // to add multiple event handlers to the same button
         this.save.removeAttribute("disabled");
@@ -496,7 +505,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
           callbacks.save(e);
         }));
         this.save.style.display = "";
-      } else {
+      } else if (this.save) {
         this.save.style.display = "none";
       }
       if (callbacks !== undefined && callbacks.download) {
@@ -560,15 +569,24 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       this.bgRight.style.width = "100%";
 
       if (!(this.isElementInViewport(this.buttons))) {
-        this.cancel.style.position = this.download.style.position = this.save.style.position = "fixed";
+        this.cancel.style.position = this.download.style.position = "fixed";
         this.cancel.style.left = (pos.left - bodyRect.left - 50) + "px";
         this.download.style.left = ((pos.left - bodyRect.left - 100)) + "px";
-        this.save.style.left = ((pos.left - bodyRect.left) - 190) + "px";
-        this.cancel.style.top = this.download.style.top = this.save.style.top = (pos.top - bodyRect.top) + "px";
+        this.cancel.style.top = this.download.style.top = (pos.top - bodyRect.top) + "px";
+        if (this.save) {
+          this.save.style.position = "fixed";
+          this.save.style.left = ((pos.left - bodyRect.left) - 190) + "px";
+          this.save.style.top = (pos.top - bodyRect.top) + "px";
+        }
       } else {
-        this.cancel.style.position = this.download.style.position = this.save.style.position = "initial";
-        this.cancel.style.top = this.download.style.top = this.save.style.top = 0;
-        this.cancel.style.left = this.download.style.left = this.save.style.left = 0;
+        this.cancel.style.position = this.download.style.position = "initial";
+        this.cancel.style.top = this.download.style.top = 0;
+        this.cancel.style.left = this.download.style.left = 0;
+        if (this.save) {
+          this.save.style.position = "initial";
+          this.save.style.top = 0;
+          this.save.style.left = 0;
+        }
       }
     },
 
@@ -591,13 +609,21 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       let cancel = makeEl("button", "highlight-button-cancel");
       cancel.title = browser.i18n.getMessage("cancelScreenshot");
       buttons.appendChild(cancel);
-      let download = makeEl("button", "highlight-button-download");
-      download.title = browser.i18n.getMessage("downloadScreenshot");
+      let download;
+      let save;
+      if (isDownloadOnly()) {
+        download = makeEl("button", "highlight-button-download download-only-button");
+        download.title = browser.i18n.getMessage("downloadScreenshot");
+        download.textContent = browser.i18n.getMessage("downloadScreenshot");
+      } else {
+        download = makeEl("button", "highlight-button-download");
+        download.title = browser.i18n.getMessage("downloadScreenshot");
+        save = makeEl("button", "highlight-button-save");
+        save.textContent = browser.i18n.getMessage("saveScreenshotSelectedArea");
+        save.title = browser.i18n.getMessage("saveScreenshotSelectedArea");
+        buttons.appendChild(save);
+      }
       buttons.appendChild(download);
-      let save = makeEl("button", "highlight-button-save");
-      save.textContent = browser.i18n.getMessage("saveScreenshotSelectedArea");
-      save.title = browser.i18n.getMessage("saveScreenshotSelectedArea");
-      buttons.appendChild(save);
       this.buttons = buttons;
       this.cancel = cancel;
       this.download = download;
@@ -618,6 +644,27 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       this.bgBottom = makeEl("div", "bghighlight");
       iframe.document().body.appendChild(this.bgBottom);
       iframe.document().body.appendChild(boxEl);
+      if (isDownloadOnly()) {
+        let notice = makeEl("div", "download-only");
+        notice.textContent = "You are currently in Download-Only mode."; // browser.i18n.getMessage("downloadOnlyNotice");
+        let questionMark = makeEl("span", "circle");
+        questionMark.textContent = "?";
+        notice.appendChild(questionMark); // hopefully this doesn't wrap onto the next line.
+
+        let tooltip = makeEl("div", "download-only-details");
+        let details = makeEl("p");
+        details.textContent = "These are some download only details. Details details detail details etc and on and on. It's great." // browser.i18n.getMessage("downloadOnlyDetails");
+        let detailsList = makeEl("ul");
+        let detailsPrivate = makeEl("li");
+        detailsPrivate.textContent = "Private Browsing mode harumph" // browser.i18n.getMessage("downloadOnlyDetailsPrivate");
+
+        detailsList.appendChild(detailsPrivate);
+        details.appendChild(detailsList);
+        tooltip.appendChild(details);
+        notice.appendChild(tooltip);
+        this.downloadNotice = notice;
+        iframe.document().body.appendChild(notice);
+      }
       this.el = boxEl;
     },
 
@@ -703,11 +750,17 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       if (this.el) {
         this.el.style.display = "none";
       }
+      if (this.downloadNotice) {
+        this.downloadNotice.display = "none";
+      }
     },
 
     remove() {
       util.removeNode(this.el);
       this.el = null;
+      // TODO: not happy about this clutter
+      util.removeNode(this.downloadNotice);
+      this.downloadNotice = null;
     }
   };
 
