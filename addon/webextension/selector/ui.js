@@ -264,8 +264,10 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
                      </div>
                      <div class="preview-instructions" data-l10n-id="screenshotInstructions"></div>
                      <div class="myshots-all-buttons-container">
-                       <button class="myshots-button myshots-link" tabindex="1" data-l10n-id="myShotsLink"></button>
-                       <div class="spacer"></div>
+                       ${window.incognito ? '' : `
+                         <button class="myshots-button myshots-link" tabindex="1" data-l10n-id="myShotsLink"></button>
+                         <div class="spacer"></div>
+                       `}
                        <button class="myshots-button visible" tabindex="2" data-l10n-id="saveScreenshotVisibleArea"></button>
                        <button class="myshots-button full-page" tabindex="3" data-l10n-id="saveScreenshotFullPage"></button>
                      </div>
@@ -280,8 +282,10 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
             this.document.documentElement.lang = browser.i18n.getMessage("@@ui_locale");
             const overlay = this.document.querySelector(".preview-overlay");
             localizeText(this.document);
-            overlay.querySelector(".myshots-button").addEventListener(
-              "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onOpenMyShots)));
+            if (!window.incognito) {
+              overlay.querySelector(".myshots-button").addEventListener(
+                "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onOpenMyShots)));
+            }
             overlay.querySelector(".visible").addEventListener(
               "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onClickVisible)));
             overlay.querySelector(".full-page").addEventListener(
@@ -363,7 +367,9 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
                     <div class="preview-buttons">
                       <button class="highlight-button-cancel"></button>
                       <button class="highlight-button-download"></button>
-                      <button class="preview-button-save" data-l10n-id="saveScreenshotSelectedArea"></button>
+                      ${window.incognito ? '' : `
+                        <button class="preview-button-save" data-l10n-id="saveScreenshotSelectedArea"></button>
+                      `}
                     </div>
                   </div>
                 </div>
@@ -375,8 +381,10 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
             const overlay = this.document.querySelector(".preview-overlay");
             overlay.querySelector(".highlight-button-download").addEventListener(
               "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onDownloadPreview)));
-            overlay.querySelector(".preview-button-save").addEventListener(
-              "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onSavePreview)));
+            if (!window.incognito) {
+              overlay.querySelector(".preview-button-save").addEventListener(
+                "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onSavePreview)));
+            }
             overlay.querySelector(".highlight-button-cancel").addEventListener(
               "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.cancel)));
             resolve();
